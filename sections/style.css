@@ -114,12 +114,12 @@
     .longform-track.is-carousel::-webkit-scrollbar { display: none; }
     .longform-track.is-carousel .longform-slide { flex: 0 0 calc((100% - 20px) / 2); min-width: 0; scroll-snap-align: start; }
     .longform-player { width: 100%; overflow: hidden; border: 1px solid #34363e; border-radius: 10px; background: #111216; box-shadow: 0 18px 50px #0006; }
-    .longform-player-screen { position: relative; display: grid; min-height: 220px; aspect-ratio: 16 / 9; place-content: center; justify-items: center; gap: 16px; padding: 24px; background: radial-gradient(ellipse at center, #25262d 0, #15161b 45%, #090a0d 100%); text-align: center; }
+    .longform-player-screen { position: relative; display: grid; aspect-ratio: 16 / 9; place-content: center; justify-items: center; gap: 16px; padding: 24px; background: radial-gradient(ellipse at center, #25262d 0, #15161b 45%, #090a0d 100%); text-align: center; }
     .longform-poster, .longform-video { position: absolute; inset: 0; width: 100%; height: 100%; }
     .longform-poster { display: grid; place-items: center; overflow: hidden; background: #08090b; }
     .longform-poster[hidden] { display: none; }
     .longform-poster img { width: 100%; height: 100%; object-fit: cover; }
-    .longform-video { border: 0; pointer-events: none; }
+    .longform-video { border: 0; }
     .longform-play { position: absolute; top: 50%; left: 50%; display: grid; width: 68px; height: 48px; place-items: center; padding-left: 4px; transform: translate(-50%, -50%); border-radius: 14px; background: #ff0033; color: white; font-size: 22px; transition: transform .2s, background .2s; }
     .longform-poster:hover .longform-play { transform: translate(-50%, -50%) scale(1.08); background: #d9002b; }
     .longform-placeholder-copy { display: grid; gap: 7px; color: var(--paper); }
@@ -144,7 +144,7 @@
     .project-open { position: absolute; right: 14px; bottom: 14px; display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 12px; border: 0; background: var(--lime); color: white; font-size: 11px; font-weight: 700; cursor: pointer; }
     .project-video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
     .project-video[hidden] { display: none; }
-    .project-youtube-preview { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; pointer-events: none; }
+    .project-youtube-preview { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
     .project-poster { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; padding: 0; border: 0; background: #171716; color: var(--paper); text-align: left; cursor: pointer; }
     .project-poster-image { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; filter: saturate(.8) contrast(1.08); transition: transform .4s, filter .3s; }
     .project-poster:hover .project-poster-image { transform: scale(1.035); filter: brightness(.82) saturate(.8) contrast(1.08); }
@@ -433,6 +433,8 @@
       .hero-orbit { width: 94%; height: 76%; }
       .frame-label { right: 0; bottom: 5%; width: 132px; padding: 11px; }
       .art-index { right: 1%; }
+      .longform-track { grid-template-columns: minmax(0, 1fr); }
+      .longform-track.is-carousel .longform-slide { flex-basis: 100%; }
     }
 
     #page-sections .section-load-error { margin: 48px auto; width: min(800px, calc(100% - 40px)); color: #ff9b60; }

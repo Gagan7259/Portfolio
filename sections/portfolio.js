@@ -115,6 +115,52 @@ function initializePortfolio() {
     new MutationObserver(updateLongformCarousel).observe(longformTrack, { childList: true });
     updateLongformCarousel();
 
+    let activeYouTubePlayer = null;
+    const stopActiveYouTubePlayer = () => {
+      if (!activeYouTubePlayer) return;
+      const activePoster = activeYouTubePlayer.parentElement.querySelector('.longform-poster, .project-poster');
+      activeYouTubePlayer.remove();
+      if (activePoster) activePoster.hidden = false;
+      activeYouTubePlayer = null;
+    };
+    const createYouTubeFrame = (poster, className) => {
+      const videoId = poster.dataset.youtubeId;
+      const title = poster.closest('.project-card')?.querySelector('.project-info h3')?.textContent.trim()
+        || poster.getAttribute('aria-label').replace(/^Play | on YouTube$/g, '');
+      const frame = document.createElement('iframe');
+      frame.className = className;
+      frame.title = title;
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      const parameters = new URLSearchParams({
+        autoplay: '1',
+        controls: '1',
+        fs: '0',
+        playsinline: '1',
+        rel: '0',
+        origin: window.location.origin,
+      });
+      if (className === 'project-youtube-preview') {
+        parameters.set('loop', '1');
+        parameters.set('playlist', videoId);
+      }
+      frame.src = `https://www.youtube.com/embed/${videoId}?${parameters}`;
+      return frame;
+    };
+    const playYouTubeWithSound = (container, poster, preview, className) => {
+      stopActiveYouTubePlayer();
+      stopActiveProjectVideo();
+      const player = createYouTubeFrame(poster, className);
+      if (preview?.isConnected) {
+        preview.replaceWith(player);
+      } else {
+        container.appendChild(player);
+      }
+      poster.hidden = true;
+      activeYouTubePlayer = player;
+      return player;
+    };
+
     longformTrack.querySelectorAll('.longform-player-screen').forEach((screen) => {
       const poster = screen.querySelector('.longform-poster');
       if (!poster || (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
@@ -122,26 +168,22 @@ function initializePortfolio() {
 
       screen.addEventListener('pointerenter', (event) => {
         if (event.pointerType !== 'mouse' || preview) return;
-        const videoId = poster.dataset.youtubeId;
-        const parameters = new URLSearchParams({
-          autoplay: '1',
-          mute: '1',
-          controls: '0',
-          playsinline: '1',
-          rel: '0',
-          origin: window.location.origin,
-        });
-        preview = document.createElement('iframe');
-        preview.className = 'longform-video';
-        preview.title = `${poster.getAttribute('aria-label').replace(/^Play | on YouTube$/g, '')} preview`;
-        preview.allow = 'autoplay; encrypted-media; picture-in-picture';
-        preview.referrerPolicy = 'strict-origin-when-cross-origin';
-        preview.src = `https://www.youtube.com/embed/${videoId}?${parameters}`;
+        stopActiveYouTubePlayer();
+        stopActiveProjectVideo();
+        preview = createYouTubeFrame(poster, 'longform-video');
         screen.appendChild(preview);
         poster.hidden = true;
       });
 
+      screen.addEventListener('click', (event) => {
+        if (!poster.contains(event.target)) return;
+        if (preview === activeYouTubePlayer) return;
+        event.preventDefault();
+        preview = playYouTubeWithSound(screen, poster, preview, 'longform-video');
+      });
+
       screen.addEventListener('pointerleave', () => {
+        if (preview === activeYouTubePlayer) return;
         preview?.remove();
         preview = null;
         poster.hidden = false;
@@ -250,29 +292,24 @@ function initializePortfolio() {
       if (poster.dataset.youtubeId) {
         if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') return;
         const wrapper = poster.parentElement;
-        let preview;
+        let preview = null;
         wrapper.addEventListener('pointerenter', (event) => {
           if (event.pointerType !== 'mouse' || preview) return;
+          stopActiveYouTubePlayer();
           stopActiveProjectVideo();
-          preview = document.createElement('iframe');
-          preview.className = 'project-youtube-preview';
-          preview.title = poster.closest('.project-card').querySelector('.project-info h3').textContent.trim();
-          preview.allow = 'autoplay; encrypted-media; picture-in-picture';
-          preview.referrerPolicy = 'strict-origin-when-cross-origin';
-          const parameters = new URLSearchParams({
-            autoplay: '1',
-            mute: '1',
-            controls: '0',
-            playsinline: '1',
-            loop: '1',
-            playlist: poster.dataset.youtubeId,
-            origin: window.location.origin,
-          });
-          preview.src = `https://www.youtube.com/embed/${poster.dataset.youtubeId}?${parameters}`;
+          preview = createYouTubeFrame(poster, 'project-youtube-preview');
           wrapper.insertBefore(preview, poster);
           poster.hidden = true;
         });
+        wrapper.addEventListener('click', (event) => {
+          if (event.target.closest('.project-open')) return;
+          if (!poster.contains(event.target)) return;
+          if (preview === activeYouTubePlayer) return;
+          event.preventDefault();
+          preview = playYouTubeWithSound(wrapper, poster, preview, 'project-youtube-preview');
+        });
         wrapper.addEventListener('pointerleave', () => {
+          if (preview === activeYouTubePlayer) return;
           if (preview) preview.remove();
           preview = null;
           poster.hidden = false;
@@ -282,14 +319,24 @@ function initializePortfolio() {
       const videoUrl = poster.dataset.video;
       if (!videoUrl) return;
       setPosterFrame(poster, videoUrl);
-      const openInlinePlayer = () => {
+      const openInlinePlayer = (withSound = false) => {
         const video = poster.parentElement.querySelector('.project-video');
-        if (!video || !video.hidden) return video;
+        if (!video) return video;
+        if (!video.hidden) {
+          if (withSound) {
+            video.muted = false;
+            video.volume = 1;
+            video.controls = true;
+          }
+          return video;
+        }
+        stopActiveYouTubePlayer();
         activateProjectVideo(video);
         video.src = poster.dataset.video;
         video.hidden = false;
         poster.hidden = true;
-        video.muted = true;
+        video.muted = !withSound;
+        video.controls = withSound;
         video.play().catch((error) => {
           console.error(`Could not autoplay project video "${video.title}".`, error);
           video.hidden = true;
@@ -304,7 +351,16 @@ function initializePortfolio() {
       poster.addEventListener('pointerenter', (event) => {
         if (event.pointerType === 'mouse') openInlinePlayer();
       });
-      poster.addEventListener('click', openInlinePlayer);
+      poster.addEventListener('click', (event) => {
+        event.preventDefault();
+        openInlinePlayer(true);
+      });
+      poster.parentElement.querySelector('.project-video')?.addEventListener('click', () => {
+        const video = poster.parentElement.querySelector('.project-video');
+        video.muted = false;
+        video.volume = 1;
+        video.controls = true;
+      });
     });
 
     if ('IntersectionObserver' in window) {
